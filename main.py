@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 
 # ==========================================
-# 🧠 MOTOR QUANTUM AURAXIS - INTEGRAÇÃO TOTAL
+# MOTOR QUANTUM AURAXIS - INTEGRAÇÃO TOTAL
 # ==========================================
 class AuraxisCore:
     def __init__(self):
@@ -19,7 +19,6 @@ class AuraxisCore:
         self.banca_referencia = 1000.0
 
     def simular_monte_carlo(self, preco_atual, vol_estimada):
-        """[SPRINT FINAL] Simulação de 100 caminhos para os próximos 30s"""
         simulacoes = 100
         passos = 6 
         reversoes = 0
@@ -31,7 +30,6 @@ class AuraxisCore:
         return reversoes / simulacoes
 
     def analisar_padrao_ml(self, p_atual):
-        """[SPRINT 2] Machine Learning para detectar Smart Money"""
         self.memoria_ticks.append(p_atual)
         if len(self.memoria_ticks) > 60: self.memoria_ticks.pop(0)
         
@@ -43,35 +41,27 @@ class AuraxisCore:
         return "INSTITUCIONAL" if pred[0] == -1 else "VAREJO"
 
     def calcular_pressao_espectro(self, p_atual):
-        """[SPRINT 3] Mede a fricção e compressão de ordens"""
         if len(self.memoria_ticks) < 10: return 0.0
         volatilidade = np.std(self.memoria_ticks)
         saturacao = 100 - min(volatilidade * 800000, 100)
         return saturacao
 
     def processar_v15_pro(self, p_atual, ohlc_df):
-        # 1. Musculatura (Z-Score)
         precos = ohlc_df['Close'].values.reshape(-1, 1)
         scaler = StandardScaler()
         z_score = float(scaler.fit_transform(precos)[-1][0])
         
-        # 2. Inteligência de Padrão (ML)
         status_ml = self.analisar_padrao_ml(p_atual)
         
-        # 3. Probabilidade Pura (Monte Carlo)
         vol_est = np.std(self.memoria_ticks) if len(self.memoria_ticks) > 2 else 0.0001
         prob_mc = self.simular_monte_carlo(p_atual, vol_est)
         
-        # 4. Saturação (Espectro)
         sat_nivel = self.calcular_pressao_espectro(p_atual)
         
-        # 5. Convergência Bayesiana (Fusão de todas as Sprints)
-        # Se Z-Score é alto, ML detecta anomalia e MC confirma reversão -> Sinal Forte
         evidencia = prob_mc if (abs(z_score) > 1.5 and status_ml == "INSTITUCIONAL") else 0.45
         self.confianca_bayes = (evidencia * self.confianca_bayes) / \
                                ((evidencia * self.confianca_bayes) + (0.5 * (1 - self.confianca_bayes)))
         
-        # 6. Gestão de Risco (Kelly Criterion adaptado)
         k_fator = max(0, ((self.confianca_bayes * 1.8) - 0.8) * 0.03)
         
         return {
@@ -82,12 +72,36 @@ class AuraxisCore:
             "z_score": z_score,
             "lote": round(self.banca_referencia * k_fator, 2),
             "bias": "CALL (ALTA)" if z_score < 0 else "PUT (BAIXA)",
-            "alerta": "CONVERGÊNCIA" if (self.confianca_bayes > 0.88) else "ESTÁVEL"
+            "alerta": "CONVERGENCIA" if (self.confianca_bayes > 0.88) else "ESTAVEL"
         }
 
 # ==========================================
-# 📱 INTERFACE WEB ADAPTADA (Flet)
+# INTERFACE WEB ADAPTADA (Flet)
 # ==========================================
+def build_sparkline(prices, color="cyan", num_bars=20, height=80):
+    """Build a simple bar-based sparkline chart from price list."""
+    bars = ft.Row(spacing=2, expand=True, vertical_alignment=ft.CrossAxisAlignment.END)
+    if len(prices) < 2:
+        return ft.Container(content=bars, height=height, bgcolor="#0a0a0a", border_radius=8, padding=5)
+    
+    p_min = min(prices)
+    p_max = max(prices)
+    p_range = p_max - p_min if p_max != p_min else 0.0001
+    
+    display = prices[-num_bars:]
+    for p in display:
+        bar_h = max(4, int(((p - p_min) / p_range) * (height - 10)))
+        bars.controls.append(
+            ft.Container(
+                width=8,
+                height=bar_h,
+                bgcolor=color,
+                border_radius=2,
+            )
+        )
+    return ft.Container(content=bars, height=height, bgcolor="#0a0a0a", border_radius=8, padding=5)
+
+
 def main(page: ft.Page):
     page.title = "AURAXIS SENTINEL V15 PRO"
     page.bgcolor = "#000000"
@@ -95,39 +109,49 @@ def main(page: ft.Page):
     page.padding = 20
     
     core = AuraxisCore()
+    price_history = []
     
-    # Elementos de UI
     lbl_price = ft.Text("0.00000", size=50, weight="bold", font_family="monospace")
     lbl_bias = ft.Text("CALIBRANDO SISTEMA...", size=16, color="cyan")
     
     bar_confianca = ft.ProgressBar(value=0.5, color="cyan", bgcolor="#111111", height=15)
-    txt_confianca = ft.Text("CONFIANÇA BAYESIANA: 50%", size=14, weight="bold")
+    txt_confianca = ft.Text("CONFIANCA BAYESIANA: 50%", size=14, weight="bold")
     
     bar_saturacao = ft.ProgressBar(value=0.0, color="orange", bgcolor="#111111")
-    txt_saturacao = ft.Text("PRESSÃO DO ESPECTRO: 0%", size=12, color="orange")
+    txt_saturacao = ft.Text("PRESSAO DO ESPECTRO: 0%", size=12, color="orange")
 
-    chart = ft.LineChart(
-        data_series=[ft.LineChartData(color="cyan", stroke_width=2, curved=True,
-                                     below_line_bgcolor=ft.colors.with_opacity(0.1, "cyan"))],
-        expand=True, min_y=0, max_y=0
+    chart_container = ft.Container(
+        content=ft.Text("AGUARDANDO DADOS...", color="grey", size=12),
+        height=100,
+        bgcolor="#0a0a0a",
+        border_radius=8,
+        padding=10,
+        alignment=ft.alignment.center
     )
 
-    card_ml = ft.Container(content=ft.Column([ft.Text("FLOW ML", size=10), ft.Text("---", size=16, weight="bold")]), 
-                          bgcolor="#0a0a0a", padding=15, border_radius=10, expand=True, border=ft.border.all(1, "white10"))
+    card_ml = ft.Container(
+        content=ft.Column([ft.Text("FLOW ML", size=10), ft.Text("---", size=16, weight="bold")]),
+        bgcolor="#0a0a0a", padding=15, border_radius=10, expand=True, border=ft.border.all(1, "#ffffff1a")
+    )
     
-    card_lote = ft.Container(content=ft.Column([ft.Text("LOTE SUGERIDO", size=10), ft.Text("0.00", size=16, weight="bold")]), 
-                          bgcolor="#0a0a0a", padding=15, border_radius=10, expand=True, border=ft.border.all(1, "white10"))
+    card_lote = ft.Container(
+        content=ft.Column([ft.Text("LOTE SUGERIDO", size=10), ft.Text("0.00", size=16, weight="bold")]),
+        bgcolor="#0a0a0a", padding=15, border_radius=10, expand=True, border=ft.border.all(1, "#ffffff1a")
+    )
 
     page.add(
         ft.Column([
-            ft.Row([ft.Text("AURAXIS V15 PRO", weight="bold"), ft.Icon(ft.icons.VERIFIED_USER, color="cyan", size=16)], alignment="spaceBetween"),
+            ft.Row([
+                ft.Text("AURAXIS V15 PRO", weight="bold"),
+                ft.Icon(ft.icons.VERIFIED_USER, color="cyan", size=16)
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             lbl_price,
             lbl_bias,
-            ft.Container(chart, height=200, padding=10),
+            chart_container,
             txt_confianca, bar_confianca,
             ft.Row([card_ml, card_lote]),
             txt_saturacao, bar_saturacao,
-            ft.Divider(color="white10"),
+            ft.Divider(color="#ffffff1a"),
             ft.Text("SISTEMA DE AUDITORIA QUANTITATIVA | WEB APP", size=10, color="grey")
         ], expand=True)
     )
@@ -135,43 +159,43 @@ def main(page: ft.Page):
     def sensor_pump():
         i = 0
         ohlc_cache = None
-        points = []
         while True:
             try:
-                if i % 12 == 0: ohlc_cache = yf.download("EURUSD=X", period="1d", interval="1m", progress=False)
+                if i % 12 == 0:
+                    ohlc_cache = yf.download("EURUSD=X", period="1d", interval="1m", progress=False)
                 p_atual = yf.Ticker("EURUSD=X").fast_info['last_price'] - core.offset
                 
                 if ohlc_cache is not None:
                     intel = core.processar_v15_pro(p_atual, ohlc_cache)
                     
-                    # Atualização da Interface
                     lbl_price.value = f"{p_atual:.5f}"
                     lbl_price.color = "green" if "CALL" in intel['bias'] else "red"
-                    lbl_bias.value = f"SUGESTÃO: {intel['bias']}"
+                    lbl_bias.value = f"SUGESTAO: {intel['bias']}"
                     lbl_bias.color = lbl_price.color
                     
-                    txt_confianca.value = f"CONFIANÇA BAYESIANA: {intel['confianca']:.1f}%"
+                    txt_confianca.value = f"CONFIANCA BAYESIANA: {intel['confianca']:.1f}%"
                     bar_confianca.value = intel['confianca'] / 100
                     
-                    txt_saturacao.value = f"PRESSÃO DO ESPECTRO: {intel['saturacao']:.1f}%"
+                    txt_saturacao.value = f"PRESSAO DO ESPECTRO: {intel['saturacao']:.1f}%"
                     bar_saturacao.value = intel['saturacao'] / 100
                     
                     card_ml.content.controls[1].value = intel['ml']
                     card_lote.content.controls[1].value = f"{intel['lote']}"
                     
-                    # Gráfico Dinâmico
-                    points.append(ft.LineChartDataPoint(i, p_atual))
-                    if len(points) > 20: points.pop(0)
-                    chart.min_y = min([p.y for p in points]) - 0.0001
-                    chart.max_y = max([p.y for p in points]) + 0.0001
-                    chart.data_series[0].data_points = points
+                    price_history.append(p_atual)
+                    if len(price_history) > 60:
+                        price_history.pop(0)
+                    
+                    bar_color = "green" if "CALL" in intel['bias'] else "red"
+                    chart_container.content = build_sparkline(price_history, color=bar_color)
 
                 page.update()
-            except Exception as e: print(f"Erro: {e}")
+            except Exception as e:
+                print(f"Erro: {e}")
             i += 1
             time.sleep(5)
 
     threading.Thread(target=sensor_pump, daemon=True).start()
 
 if __name__ == "__main__":
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER)
+    ft.run(main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=5000)

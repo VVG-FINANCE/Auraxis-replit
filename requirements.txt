@@ -3,3 +3,8 @@ yfinance
 pandas
 scikit-learn
 numpy
+flet
+numpy
+pandas
+scikit-learn
+yfinance

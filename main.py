@@ -126,7 +126,7 @@ def main(page: ft.Page):
         bgcolor="#0a0a0a",
         border_radius=8,
         padding=10,
-        alignment=ft.alignment.center
+        alignment=ft.Alignment(0, 0)
     )
 
     card_ml = ft.Container(
@@ -143,7 +143,7 @@ def main(page: ft.Page):
         ft.Column([
             ft.Row([
                 ft.Text("AURAXIS V15 PRO", weight="bold"),
-                ft.Icon(ft.icons.VERIFIED_USER, color="cyan", size=16)
+                # Removido Icon temporariamente para evitar erros de compatibilidade
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             lbl_price,
             lbl_bias,

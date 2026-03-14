@@ -1,0 +1,25 @@
+# =========================
+# Dependências Auraxis Robust Web App
+# =========================
+
+# Flask para web app
+Flask==2.3.5
+
+# Manipulação de dados
+pandas==2.1.0
+numpy==1.26.0
+
+# Machine Learning
+scikit-learn==1.3.0
+
+# Requests HTTP
+requests==2.31.0
+
+# Financeiro fallback / histórico
+yfinance==0.2.29
+
+# Cron e timers (opcional, para tarefas agendadas)
+APScheduler==3.10.0
+
+# Parsing de datas
+python-dateutil==2.8.2
